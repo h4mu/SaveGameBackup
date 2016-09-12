@@ -1,6 +1,7 @@
 #include "directoryscanner.h"
+#include <QList>
 
-DirectoryScanner::DirectoryScanner(QAbstractItemModel * model, QXmlNamePool namePool)
+DirectoryScanner::DirectoryScanner(QStandardItemModel * model, QXmlNamePool namePool)
     : model(model), namePool(namePool)
 {
 }
@@ -15,11 +16,22 @@ void DirectoryScanner::endElement()
     --depth;
     if(!depth)
     {
-        QString basePath(type == "registry" ? regBaseFinder.GetBasePath() : fsBaseFinder.GetBasePath());
+        QString basePath(
+                    type == "registry"
+                    ? regBaseFinder.GetBasePath()
+                    : fsBaseFinder.GetBasePath());
         if(!basePath.isEmpty())
         {
-            //TODO: check full path and add to model
+            QList<QStandardItem*> values;
+            values << new QStandardItem(name)
+                   << new QStandardItem(title)
+                   << new QStandardItem(basePath)
+                   << new QStandardItem(include.join(':'))
+                   << new QStandardItem(exclude.join(':'));
+            model->appendRow(values);
         }
+        include.clear();
+        exclude.clear();
     }
 }
 
@@ -56,14 +68,21 @@ void DirectoryScanner::attribute(const QXmlName &name, const QStringRef &value)
     {
         regBaseFinder.setRoot(value.toString());
     }
+    else if(localName == "includepath")
+    {
+        include << value.toString();
+    }
+    else if(localName == "excludepath")
+    {
+        exclude << value.toString();
+    }
 }
 
 void DirectoryScanner::comment(const QString &/*value*/){}
 void DirectoryScanner::characters(const QStringRef &/*value*/){}
 void DirectoryScanner::startDocument(){}
 void DirectoryScanner::endDocument(){}
-void DirectoryScanner::processingInstruction(const QXmlName &/*target*/,
-                                   const QString &/*value*/){}
+void DirectoryScanner::processingInstruction(const QXmlName &/*target*/, const QString &/*value*/){}
 void DirectoryScanner::atomicValue(const QVariant &/*value*/){}
 void DirectoryScanner::namespaceBinding(const QXmlName &/*name*/){}
 void DirectoryScanner::startOfSequence(){}

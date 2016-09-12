@@ -23,6 +23,6 @@ void RegistryBasePathFinder::setKey(QString value)
 
 QString RegistryBasePathFinder::GetBasePath()
 {
-    QSettings settings("HKEY_" + root.toUpper() + path, QSettings::NativeFormat);
+    QSettings settings("HKEY_" + root.toUpper() + "\\" + path, QSettings::NativeFormat);
     return settings.value(key).toString();
 }

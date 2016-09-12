@@ -3,13 +3,13 @@
 #include <QAbstractXmlReceiver>
 #include "filesystembasepathfinder.h"
 #include "registrybasepathfinder.h"
-#include <QAbstractItemModel>
+#include <QStandardItemModel>
 #include <QXmlNamePool>
 
 class DirectoryScanner : public QAbstractXmlReceiver
 {
 public:
-    DirectoryScanner(QAbstractItemModel * model, QXmlNamePool namePool);
+    DirectoryScanner(QStandardItemModel * model, QXmlNamePool namePool);
     virtual void startElement(const QXmlName &name);
     virtual void endElement();
     virtual void attribute(const QXmlName &name, const QStringRef &value);
@@ -25,12 +25,14 @@ public:
     virtual void endOfSequence();
 
 private:
-    QAbstractItemModel * model;
+    QStandardItemModel * model;
     QXmlNamePool namePool;
     int depth;
     QString name;
     QString title;
     QString type;
+    QStringList include;
+    QStringList exclude;
     FileSystemBasePathFinder fsBaseFinder;
     RegistryBasePathFinder regBaseFinder;
 

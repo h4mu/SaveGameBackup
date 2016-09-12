@@ -2,6 +2,7 @@
 #include <QStandardPaths>
 #include <QFileInfo>
 #include <QDebug>
+#include <QSettings>
 
 FileSystemBasePathFinder::FileSystemBasePathFinder(QObject *parent) :
     QObject(parent), env(QProcessEnvironment::systemEnvironment())
@@ -30,17 +31,36 @@ QString FileSystemBasePathFinder::GetBasePath()
     qDebug() << ev << " : " << evValue << "\n";
     if(evValue.isEmpty())
     {
-        if(ev == "startmenu")
+        bool isStartMenu(ev == "startmenu");
+        if(isStartMenu || ev == "userdocuments")
         {
-            QStringList paths(QStandardPaths::standardLocations(QStandardPaths::StandardLocation::ApplicationsLocation));
+            QStandardPaths::StandardLocation location(
+                        isStartMenu
+                        ? QStandardPaths::StandardLocation::ApplicationsLocation
+                        : QStandardPaths::StandardLocation::DocumentsLocation);
+            QStringList paths(QStandardPaths::standardLocations(location));
             foreach (const QString &base, paths)
             {
-                file.setFile(base + path);
+                // remove extra "Programs\" from the front because it is already included in the standard location string
+                file.setFile(base + "\\" + (isStartMenu ? path.remove(0, 9) : path));
                 qDebug() << file.path() << "\n";
                 if(file.exists())
                 {
                     qDebug() << "Found.\n";
-                    return file.path();
+                    return isShortcut ? file.symLinkTarget() : file.path();
+                }
+            }
+        }
+        else if(ev == "steamcommon")
+        {
+            QSettings settings("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", QSettings::NativeFormat);
+            QString steamPath(settings.value("InstallPath").toString());
+            if(!steamPath.isEmpty())
+            {
+                file.setFile(steamPath + "\\steamapps\\common\\" + path);
+                if(file.exists())
+                {
+                    return isShortcut ? file.symLinkTarget() : file.path();
                 }
             }
         }
@@ -50,7 +70,7 @@ QString FileSystemBasePathFinder::GetBasePath()
         file.setFile(evValue + path);
         if(file.exists())
         {
-            return file.path();
+            return isShortcut ? file.symLinkTarget() : file.path();
         }
     }
     return QString();

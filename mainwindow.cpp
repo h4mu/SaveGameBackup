@@ -14,6 +14,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->tableView->setModel(model);
+    QStringList headers;
+    headers << "name" << "title" << "basePath" << "includes" << "excludes";
+    model->setHorizontalHeaderLabels(headers);
 }
 
 MainWindow::~MainWindow()
@@ -31,7 +34,7 @@ void MainWindow::on_actionSettings_triggered()
 void MainWindow::on_action_Scan_Computer_triggered()
 {
     QXmlQuery query;
-    query.setQuery(":/GameSaveInfo202.xq");
+    query.setQuery(QUrl("qrc:///GameSaveInfo202.xq"));
     if (!query.isValid()) {
         qDebug() << "The query is invalid";
         return;
