@@ -1,4 +1,4 @@
-for $loc in doc('http://gamesave.info/api/GameSaveInfo202/')/programs/game/version[@os='Windows' or @os='DOS']/locations/*
+for $loc in doc('http://gamesave.info/api/GameSaveInfo202/')/programs/game/version[@os='Windows' or @os='DOS']/locations/*[not(@name)]
 return element location {$loc/../../../@name,
         attribute title {$loc/../../../title/text()},
         attribute type {local-name($loc)},

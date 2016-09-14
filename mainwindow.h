@@ -17,12 +17,17 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+protected:
+    void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
+
 private slots:
     void on_actionSettings_triggered();
 
     void on_action_Scan_Computer_triggered();
 
 private:
+    void readSettings();
+    void writeSettings();
     Ui::MainWindow *ui;
     QStandardItemModel *model;
 };

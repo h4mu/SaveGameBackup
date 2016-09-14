@@ -2,7 +2,7 @@
 #include <QList>
 
 DirectoryScanner::DirectoryScanner(QStandardItemModel * model, QXmlNamePool namePool)
-    : model(model), namePool(namePool)
+    : depth(0), model(model), namePool(namePool)
 {
 }
 

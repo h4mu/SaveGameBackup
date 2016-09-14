@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
     a.setApplicationVersion("0.0.1");
     a.setOrganizationName("h4mu");
     MainWindow w;
-    w.show();
+    w.showMaximized();
 
     return a.exec();
 }
