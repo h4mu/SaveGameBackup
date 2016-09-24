@@ -1,9 +1,14 @@
 #include "directoryscanner.h"
 #include <QList>
 
-DirectoryScanner::DirectoryScanner(QStandardItemModel * model, QXmlNamePool namePool)
-    : depth(0), model(model), namePool(namePool)
+DirectoryScanner::DirectoryScanner(QXmlNamePool namePool)
+    : depth(0), namePool(namePool)
 {
+}
+
+QList<QStringList> DirectoryScanner::foundGames()
+{
+    return result;
 }
 
 void DirectoryScanner::startElement(const QXmlName &name)
@@ -22,13 +27,9 @@ void DirectoryScanner::endElement()
                     : fsBaseFinder.GetBasePath());
         if(!basePath.isEmpty())
         {
-            QList<QStandardItem*> values;
-            values << new QStandardItem(name)
-                   << new QStandardItem(title)
-                   << new QStandardItem(basePath)
-                   << new QStandardItem(include.join(':'))
-                   << new QStandardItem(exclude.join(':'));
-            model->appendRow(values);
+            QStringList values;
+            values << name << title << basePath << include.join(':') << exclude.join(':');
+            result << values;
         }
         include.clear();
         exclude.clear();

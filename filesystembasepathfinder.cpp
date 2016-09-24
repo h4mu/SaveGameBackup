@@ -36,8 +36,8 @@ QString FileSystemBasePathFinder::GetBasePath()
         {
             QStandardPaths::StandardLocation location(
                         isStartMenu
-                        ? QStandardPaths::StandardLocation::ApplicationsLocation
-                        : QStandardPaths::StandardLocation::DocumentsLocation);
+                        ? QStandardPaths::ApplicationsLocation
+                        : QStandardPaths::DocumentsLocation);
             QStringList paths(QStandardPaths::standardLocations(location));
             foreach (const QString &base, paths)
             {

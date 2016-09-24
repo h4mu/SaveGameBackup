@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QFutureWatcher>
 
 class QStandardItemModel;
 
@@ -22,14 +23,15 @@ protected:
 
 private slots:
     void on_actionSettings_triggered();
-
     void on_action_Scan_Computer_triggered();
+    void updateModel();
 
 private:
     void readSettings();
     void writeSettings();
     Ui::MainWindow *ui;
     QStandardItemModel *model;
+    QFutureWatcher<QList<QStringList> > *watcher;
 };
 
 #endif // MAINWINDOW_H

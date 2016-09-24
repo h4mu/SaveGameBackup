@@ -7,16 +7,19 @@
 #include <QScopedPointer>
 #include <QStandardItemModel>
 #include <QSettings>
-#include <QMessageBox>
+//#include <QMessageBox>
 #include <QtWidgets>
+#include <QtConcurrent>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    model(new QStandardItemModel(0, 5))
+    model(new QStandardItemModel(0, 5)),
+    watcher(new QFutureWatcher<QList<QStringList> >(this))
 {
     ui->setupUi(this);
     ui->tableView->setModel(model);
+    connect(watcher, SIGNAL(finished()), this, SLOT(updateModel()));
 
     readSettings();
     QStringList headers;
@@ -69,6 +72,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
     delete model;
+    delete watcher;
 }
 
 void MainWindow::on_actionSettings_triggered()
@@ -77,19 +81,62 @@ void MainWindow::on_actionSettings_triggered()
     dlg->exec();
 }
 
-void MainWindow::on_action_Scan_Computer_triggered()
+QList<QStringList> readGamesDb(const QString &batch)
 {
     QXmlQuery query;
+#ifdef Q_OS_WIN
+    query.bindVariable("os", QVariant("Windows"));
+#elif defined(Q_OS_ANDROID)
+    query.bindVariable("os", QVariant("Android"));
+#elif defined(Q_OS_OSX)
+    query.bindVariable("os", QVariant("OSX"));
+#else
+    query.bindVariable("os", QVariant("Linux"));
+#endif
+    query.bindVariable("batch", QVariant(batch));
     query.setQuery(QUrl("qrc:///GameSaveInfo202.xq"));
     if (!query.isValid()) {
-        QMessageBox::critical(this, tr("Query Error"), tr("Unable to query games database."));
-        return;
+        qDebug() << "Invalid query";
+        QMessageBox::critical(0, QObject::tr("Query Error"), QObject::tr("Unable to query games database."));
+        return QList<QStringList>();
     }
-
-    model->clear();
-    DirectoryScanner directoryScanner(model, query.namePool());
+    DirectoryScanner directoryScanner(query.namePool());
     if (!query.evaluateTo(&directoryScanner)) {
-        QMessageBox::critical(this, tr("Query Error"), tr("Unable to parse games database."));
-        return;
+        qDebug() << "Query error";
+        QMessageBox::critical(0, QObject::tr("Query Error"), QObject::tr("Unable to parse games database."));
+        return QList<QStringList>();
     }
+    return directoryScanner.foundGames();
+}
+
+void MainWindow::updateModel()
+{
+    foreach (QList<QStringList> rows, watcher->future()) {
+        foreach(QStringList row, rows){
+          QList<QStandardItem *> itemRow;
+          foreach(QString val, row){
+            itemRow << new QStandardItem(val);
+          }
+          model->appendRow(itemRow);
+        }
+    }
+}
+
+void MainWindow::on_action_Scan_Computer_triggered()
+{
+    model->clear();
+    QStringList batches;
+    batches << "numeric";
+    for(char batch = 'a'; batch <= 'z'; ++batch){
+      batches << QString(QChar(batch));
+    }
+    QProgressDialog dialog;
+    dialog.setLabelText("Scanning computer for games...");
+    connect(watcher, SIGNAL(finished()), &dialog, SLOT(reset()));
+    connect(&dialog, SIGNAL(canceled()), watcher, SLOT(cancel()));
+    connect(watcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
+    connect(watcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
+
+    watcher->setFuture(QtConcurrent::mapped(batches, readGamesDb));
+    dialog.exec();
 }
