@@ -7,9 +7,20 @@
 #include <QScopedPointer>
 #include <QStandardItemModel>
 #include <QSettings>
-//#include <QMessageBox>
+#include <QMessageBox>
 #include <QtWidgets>
 #include <QtConcurrent>
+
+enum SaveGameItemDataRole
+{
+    NameRole = Qt::UserRole,
+    TitleRole = Qt::DisplayRole,
+    PathRole = Qt::UserRole + 1,
+    IncludesRole = Qt::UserRole + 2,
+    ExcludesRole = Qt::UserRole + 3
+};
+const static SaveGameItemDataRole roles[] = {NameRole, TitleRole, PathRole, IncludesRole, ExcludesRole};
+const static int numRoles = sizeof(roles) / sizeof(*roles);
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -18,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     watcher(new QFutureWatcher<QList<QStringList> >(this))
 {
     ui->setupUi(this);
-    ui->tableView->setModel(model);
+    ui->listView->setModel(model);
     connect(watcher, SIGNAL(finished()), this, SLOT(updateModel()));
 
     readSettings();
@@ -34,12 +45,13 @@ void MainWindow::readSettings()
     for (int row = 0; row < rows; ++row) {
         settings.setArrayIndex(row);
         int columns = settings.beginReadArray("row");
-        QList<QStandardItem*> values;
+        Q_ASSERT(columns == numRoles);
+        QStandardItem *item = new QStandardItem;
         for (int col = 0; col < columns; ++col) {
             settings.setArrayIndex(col);
-            values << new QStandardItem(settings.value("value").toString());
+            item->setData(settings.value("value"), roles[col]);
         }
-        model->appendRow(values);
+        model->appendRow(item);
         settings.endArray();
     }
     settings.endArray();
@@ -48,14 +60,14 @@ void MainWindow::readSettings()
 void MainWindow::writeSettings()
 {
     QSettings settings;
-    settings.clear();
+    settings.clear();   //TODO: only clear the items part
     settings.beginWriteArray("model");
     for (int row = 0; row < model->rowCount(); ++row) {
         settings.setArrayIndex(row);
         settings.beginWriteArray("row");
-        for (int col = 0; col < model->columnCount(); ++col) {
+        for (int col = 0; col < numRoles; ++col) {
             settings.setArrayIndex(col);
-            settings.setValue("value", model->item(row, col)->text());
+            settings.setValue("value", model->item(row, 0)->data(roles[col]));
         }
         settings.endArray();
     }
@@ -112,12 +124,13 @@ QList<QStringList> readGamesDb(const QString &batch)
 void MainWindow::updateModel()
 {
     foreach (QList<QStringList> rows, watcher->future()) {
-        foreach(QStringList row, rows){
-          QList<QStandardItem *> itemRow;
-          foreach(QString val, row){
-            itemRow << new QStandardItem(val);
-          }
-          model->appendRow(itemRow);
+        foreach (QStringList row, rows) {
+            Q_ASSERT(row.length() == numRoles);
+            QStandardItem *item = new QStandardItem;
+            for (int role = 0; role < numRoles; ++role) {
+              item->setData(row.at(role), roles[role]);
+            }
+            model->appendRow(item);
         }
     }
 }
@@ -130,8 +143,9 @@ void MainWindow::on_action_Scan_Computer_triggered()
     for(char batch = 'a'; batch <= 'z'; ++batch){
       batches << QString(QChar(batch));
     }
+
     QProgressDialog dialog;
-    dialog.setLabelText("Scanning computer for games...");
+    dialog.setLabelText(tr("Scanning computer for games..."));
     connect(watcher, SIGNAL(finished()), &dialog, SLOT(reset()));
     connect(&dialog, SIGNAL(canceled()), watcher, SLOT(cancel()));
     connect(watcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
@@ -140,3 +154,16 @@ void MainWindow::on_action_Scan_Computer_triggered()
     watcher->setFuture(QtConcurrent::mapped(batches, readGamesDb));
     dialog.exec();
 }
+
+void MainWindow::on_action_Backup_triggered()
+{
+    foreach (const QModelIndex& idx, ui->listView->selectionModel()->selectedIndexes()) {
+        RunBackupFor(idx);
+    }
+}
+
+void MainWindow::RunBackupFor(const QModelIndex& idx)
+{
+
+}
+

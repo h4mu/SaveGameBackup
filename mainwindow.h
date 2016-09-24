@@ -26,9 +26,12 @@ private slots:
     void on_action_Scan_Computer_triggered();
     void updateModel();
 
+    void on_action_Backup_triggered();
+
 private:
     void readSettings();
     void writeSettings();
+    void RunBackupFor(const QModelIndex& idx);
     Ui::MainWindow *ui;
     QStandardItemModel *model;
     QFutureWatcher<QList<QStringList> > *watcher;
