@@ -42,12 +42,12 @@ QString FileSystemBasePathFinder::GetBasePath()
             foreach (const QString &base, paths)
             {
                 // remove extra "Programs\" from the front because it is already included in the standard location string
-                file.setFile(base + "\\" + (isStartMenu ? path.remove(0, 9) : path));
+                file.setFile(base + "/" + (isStartMenu ? path.remove(0, 9) : path));
                 qDebug() << file.path() << "\n";
                 if(file.exists())
                 {
-                    qDebug() << "Found.\n";
-                    return isShortcut ? file.symLinkTarget() : file.path();
+                    qDebug() << "Found " << file.filePath() << ".\n";
+                    return isShortcut ? file.symLinkTarget() : file.filePath();
                 }
             }
         }
@@ -57,10 +57,10 @@ QString FileSystemBasePathFinder::GetBasePath()
             QString steamPath(settings.value("InstallPath").toString());
             if(!steamPath.isEmpty())
             {
-                file.setFile(steamPath + "\\steamapps\\common\\" + path);
+                file.setFile(steamPath + "/steamapps/common/" + path);
                 if(file.exists())
                 {
-                    return isShortcut ? file.symLinkTarget() : file.path();
+                    return isShortcut ? file.symLinkTarget() : file.filePath();
                 }
             }
         }
@@ -70,7 +70,7 @@ QString FileSystemBasePathFinder::GetBasePath()
         file.setFile(evValue + path);
         if(file.exists())
         {
-            return isShortcut ? file.symLinkTarget() : file.path();
+            return isShortcut ? file.symLinkTarget() : file.filePath();
         }
     }
     return QString();

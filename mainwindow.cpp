@@ -6,8 +6,6 @@
 #include <QDebug>
 #include <QScopedPointer>
 #include <QStandardItemModel>
-#include <QSettings>
-#include <QMessageBox>
 #include <QtWidgets>
 #include <QtConcurrent>
 
@@ -60,7 +58,7 @@ void MainWindow::readSettings()
 void MainWindow::writeSettings()
 {
     QSettings settings;
-    settings.clear();   //TODO: only clear the items part
+    settings.remove("model");
     settings.beginWriteArray("model");
     for (int row = 0; row < model->rowCount(); ++row) {
         settings.setArrayIndex(row);
@@ -126,6 +124,7 @@ void MainWindow::updateModel()
     foreach (QList<QStringList> rows, watcher->future()) {
         foreach (QStringList row, rows) {
             Q_ASSERT(row.length() == numRoles);
+            qDebug() << row;
             QStandardItem *item = new QStandardItem;
             for (int role = 0; role < numRoles; ++role) {
               item->setData(row.at(role), roles[role]);
@@ -162,8 +161,46 @@ void MainWindow::on_action_Backup_triggered()
     }
 }
 
-void MainWindow::RunBackupFor(const QModelIndex& idx)
+QStringList FindFiles(const QString& root, QString includes, QString excludes)
 {
-
+    QStringList files;
+    QRegularExpression includeRegEx(includes.replace(":", "|")
+                                    .replace("\\", "/")
+                                    .replace(".", "\\.")
+                                    .replace("*", ".*")
+                                    .replace("?", ".?"));
+    includeRegEx.optimize();
+    QRegularExpression excludeRegEx(excludes.replace(":", "|")
+                                    .replace("\\", "/")
+                                    .replace(".", "\\.")
+                                    .replace("*", ".*")
+                                    .replace("?", ".?"));
+    bool isExcludePatternInvalid(excludeRegEx.pattern().isEmpty());
+    if (!isExcludePatternInvalid) {
+        excludeRegEx.optimize();
+    }
+    QQueue<QFileInfo> entries;
+    entries.enqueue(QFileInfo(root));
+    while (!entries.isEmpty()) {
+        const QFileInfo& info(entries.dequeue());
+        if (info.exists()) {
+            if (info.isDir()) {
+                QDir dir(info.filePath());
+                entries << dir.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries);
+            } else if (info.isFile() && includeRegEx.match(info.filePath()).hasMatch()
+                       && (isExcludePatternInvalid || !excludeRegEx.match(info.filePath()).hasMatch())) {
+                files << info.filePath();
+            }
+        }
+    }
+    return files;
 }
 
+void MainWindow::RunBackupFor(const QModelIndex& idx)
+{
+    if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid()) {
+        qDebug() << "Backup for " << idx.data(PathRole) << " " << idx.data(IncludesRole) << " " << idx.data(ExcludesRole);
+        QStringList files(FindFiles(idx.data(PathRole).toString(), idx.data(IncludesRole).toString(), idx.data(ExcludesRole).toString()));
+//        qDebug() << files;
+    }
+}
