@@ -28,6 +28,8 @@ private slots:
 
     void on_action_Backup_triggered();
 
+    void on_action_Restore_triggered();
+
 private:
     void readSettings();
     void writeSettings();

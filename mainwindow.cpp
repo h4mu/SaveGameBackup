@@ -161,9 +161,9 @@ void MainWindow::on_action_Backup_triggered()
     }
 }
 
-QStringList FindFiles(const QString& root, QString includes, QString excludes)
+QFileInfoList FindFiles(const QString& root, QString includes, QString excludes)
 {
-    QStringList files;
+    QFileInfoList files;
     QRegularExpression includeRegEx(includes.replace(":", "|")
                                     .replace("\\", "/")
                                     .replace(".", "\\.")
@@ -189,18 +189,60 @@ QStringList FindFiles(const QString& root, QString includes, QString excludes)
                 entries << dir.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries);
             } else if (info.isFile() && includeRegEx.match(info.filePath()).hasMatch()
                        && (isExcludePatternInvalid || !excludeRegEx.match(info.filePath()).hasMatch())) {
-                files << info.filePath();
+                files << info;
             }
         }
     }
     return files;
 }
 
+extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
+
+void SaveFiles(const QString& root, const QString& name, const QFileInfoList& files)
+{
+    QDir rootDir(root);
+    QDir saveDir(QSettings().value("BackupDir", QDir::homePath() + "/SaveGames").toString());
+    if (!saveDir.exists()) {
+        saveDir.mkpath(".");
+    }
+    QFile file(saveDir.absoluteFilePath(name
+                                        + "_"
+                                        + QDateTime::currentDateTime().toString(Qt::ISODate).replace(":", "")
+                                        + ".sgb"));
+    if (!file.open(QIODevice::WriteOnly)) {
+        qDebug() << "Error saving " << file.fileName();
+        QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot save file %1").arg(file.fileName()));
+        return;
+    }
+    QDataStream out(&file);
+    out.startTransaction();
+    qt_ntfs_permission_lookup++; // turn checking on
+    foreach (const QFileInfo& info, files) {
+        QFile in(info.filePath());
+        if (!in.open(QIODevice::ReadOnly)) {
+            qDebug() << "Error opening " << info.filePath();
+            QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot open file %1").arg(info.filePath()));
+            out.abortTransaction();
+            return;
+        }
+        out << rootDir.relativeFilePath(info.filePath())
+            << static_cast<quint64>(info.permissions())
+            << qCompress(in.readAll());
+    }
+    qt_ntfs_permission_lookup--; // turn it off again
+    out.commitTransaction();
+}
+
 void MainWindow::RunBackupFor(const QModelIndex& idx)
 {
     if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid()) {
         qDebug() << "Backup for " << idx.data(PathRole) << " " << idx.data(IncludesRole) << " " << idx.data(ExcludesRole);
-        QStringList files(FindFiles(idx.data(PathRole).toString(), idx.data(IncludesRole).toString(), idx.data(ExcludesRole).toString()));
-//        qDebug() << files;
+        const QFileInfoList& files(FindFiles(idx.data(PathRole).toString(), idx.data(IncludesRole).toString(), idx.data(ExcludesRole).toString()));
+        SaveFiles(idx.data(PathRole).toString(), idx.data(NameRole).toString(), files);
     }
+}
+
+void MainWindow::on_action_Restore_triggered()
+{
+
 }
