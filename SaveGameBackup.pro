@@ -18,14 +18,16 @@ SOURCES += main.cpp\
     directoryscanner.cpp \
     filesystembasepathfinder.cpp \
     registrybasepathfinder.cpp \
-    settingsprovider.cpp
+    settingsprovider.cpp \
+    backuprestore.cpp
 
 HEADERS  += mainwindow.h \
     settingsdialog.h \
     directoryscanner.h \
     filesystembasepathfinder.h \
     registrybasepathfinder.h \
-    settingsprovider.h
+    settingsprovider.h \
+    backuprestore.h
 
 FORMS    += mainwindow.ui \
     settingsdialog.ui

@@ -10,6 +10,15 @@ namespace Ui {
 class MainWindow;
 }
 
+enum SaveGameItemDataRole
+{
+    NameRole = Qt::UserRole,
+    TitleRole = Qt::DisplayRole,
+    PathRole = Qt::UserRole + 1,
+    IncludesRole = Qt::UserRole + 2,
+    ExcludesRole = Qt::UserRole + 3
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
