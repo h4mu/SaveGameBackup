@@ -155,13 +155,6 @@ void MainWindow::on_action_Scan_Computer_triggered()
     dialog.exec();
 }
 
-void MainWindow::on_action_Backup_triggered()
-{
-    foreach (const QModelIndex& idx, ui->listView->selectionModel()->selectedIndexes()) {
-        RunBackupFor(idx);
-    }
-}
-
 QFileInfoList FindFiles(const QString& root, QString includes, QString excludes)
 {
     QFileInfoList files;
@@ -212,7 +205,7 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
                                         + ".sgb"));
     if (!file.open(QIODevice::WriteOnly)) {
         qDebug() << "Error saving " << file.fileName();
-        QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot save file %1").arg(file.fileName()));
+        QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot save file %1, reason: %2").arg(file.fileName(), file.errorString()));
         return;
     }
     QDataStream out(&file);
@@ -221,8 +214,8 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
     foreach (const QFileInfo& info, files) {
         QFile in(info.filePath());
         if (!in.open(QIODevice::ReadOnly)) {
-            qDebug() << "Error opening " << info.filePath();
-            QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot open file %1").arg(info.filePath()));
+            qDebug() << "Error opening " << in.fileName() << ", reason: " << in.errorString();
+            QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot open file %1, reason: %2").arg(in.fileName(), in.errorString()));
             out.abortTransaction();
             return;
         }
@@ -234,23 +227,31 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
     out.commitTransaction();
 }
 
-void MainWindow::RunBackupFor(const QModelIndex& idx)
+bool RunBackupFor(const QModelIndex& idx)
 {
     if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid()) {
         qDebug() << "Backup for " << idx.data(PathRole) << " " << idx.data(IncludesRole) << " " << idx.data(ExcludesRole);
         const QFileInfoList& files(FindFiles(idx.data(PathRole).toString(), idx.data(IncludesRole).toString(), idx.data(ExcludesRole).toString()));
         SaveFiles(idx.data(PathRole).toString(), idx.data(NameRole).toString(), files);
     }
+    return true;
 }
 
-void MainWindow::on_action_Restore_triggered()
+void MainWindow::on_action_Backup_triggered()
 {
-    foreach (const QModelIndex& idx, ui->listView->selectionModel()->selectedIndexes()) {
-        RunRestoreFor(idx);
-    }
+    QFutureWatcher<void> restoreWatcher;
+    QProgressDialog dialog;
+    dialog.setLabelText(tr("Creating game save backups..."));
+    connect(&restoreWatcher, SIGNAL(finished()), &dialog, SLOT(reset()));
+    connect(&dialog, SIGNAL(canceled()), &restoreWatcher, SLOT(cancel()));
+    connect(&restoreWatcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
+    connect(&restoreWatcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
+
+    restoreWatcher.setFuture(QtConcurrent::mapped(ui->listView->selectionModel()->selectedIndexes(), RunBackupFor));
+    dialog.exec();
 }
 
-void RestoreFiles(const QString& root, const QString& name)
+void RestoreFiles(const QString& root, const QString& name, const QString& title)
 {
     QDir rootDir(root);
     QDir saveDir(SettingsProvider().backupDir());
@@ -261,12 +262,13 @@ void RestoreFiles(const QString& root, const QString& name)
     const QFileInfoList& files(saveDir.entryInfoList(QStringList(name + "_*.sgb"), QDir::Files, QDir::Name | QDir::Reversed));
     if (files.empty()) {
         qDebug() << "No backup file found for " << name;
+        QMessageBox::information(0, QObject::tr("Failed to restore"), QObject::tr("No backup file found for %1").arg(title));
         return;
     }
     QFile file(files.first().filePath());
     if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "Error opening " << file.fileName();
-        QMessageBox::critical(0, QObject::tr("Restore Error"), QObject::tr("Cannot open file %1").arg(file.fileName()));
+        qDebug() << "Error opening " << file.fileName() << ", reason: " << file.errorString();
+        QMessageBox::critical(0, QObject::tr("Restore Error"), QObject::tr("Cannot open file %1, reason: %2").arg(file.fileName(), file.errorString()));
         return;
     }
     QDataStream in(&file);
@@ -275,9 +277,15 @@ void RestoreFiles(const QString& root, const QString& name)
         QString fileName;
         in >> fileName;
         QFile outFile(rootDir.filePath(fileName));
+        {
+            const QDir& dir(QFileInfo(outFile.fileName()).dir());
+            if (!dir.exists()) {
+                dir.mkpath(".");
+            }
+        }
         if (!outFile.open(QIODevice::WriteOnly)) {
-            qDebug() << "Error opening " << outFile.fileName();
-            QMessageBox::critical(0, QObject::tr("Restore Error"), QObject::tr("Cannot open file %1").arg(outFile.fileName()));
+            qDebug() << "Error opening " << outFile.fileName() << ", reason: " << outFile.errorString();
+            QMessageBox::critical(0, QObject::tr("Restore Error"), QObject::tr("Cannot open file %1, reason: %2").arg(outFile.fileName(), outFile.errorString()));
             return;
         }
         {
@@ -294,11 +302,26 @@ void RestoreFiles(const QString& root, const QString& name)
     qt_ntfs_permission_lookup--; // turn it off again
 }
 
-void MainWindow::RunRestoreFor(const QModelIndex& idx)
+bool RunRestoreFor(const QModelIndex &idx)
 {
     if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid()) {
         qDebug() << "Backup for " << idx.data(PathRole);
-        RestoreFiles(idx.data(PathRole).toString(), idx.data(NameRole).toString());
+        RestoreFiles(idx.data(PathRole).toString(), idx.data(NameRole).toString(), idx.data(TitleRole).toString());
     }
+    return true;
+}
+
+void MainWindow::on_action_Restore_triggered()
+{
+    QFutureWatcher<void> restoreWatcher;
+    QProgressDialog dialog;
+    dialog.setLabelText(tr("Restoring game saves..."));
+    connect(&restoreWatcher, SIGNAL(finished()), &dialog, SLOT(reset()));
+    connect(&dialog, SIGNAL(canceled()), &restoreWatcher, SLOT(cancel()));
+    connect(&restoreWatcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
+    connect(&restoreWatcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
+
+    restoreWatcher.setFuture(QtConcurrent::mapped(ui->listView->selectionModel()->selectedIndexes(), RunRestoreFor));
+    dialog.exec();
 }
 
