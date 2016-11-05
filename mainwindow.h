@@ -34,6 +34,7 @@ private:
     void readSettings();
     void writeSettings();
     void RunBackupFor(const QModelIndex& idx);
+    void RunRestoreFor(const QModelIndex& idx);
     Ui::MainWindow *ui;
     QStandardItemModel *model;
     QFutureWatcher<QList<QStringList> > *watcher;

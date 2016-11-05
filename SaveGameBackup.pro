@@ -17,13 +17,15 @@ SOURCES += main.cpp\
     settingsdialog.cpp \
     directoryscanner.cpp \
     filesystembasepathfinder.cpp \
-    registrybasepathfinder.cpp
+    registrybasepathfinder.cpp \
+    settingsprovider.cpp
 
 HEADERS  += mainwindow.h \
     settingsdialog.h \
     directoryscanner.h \
     filesystembasepathfinder.h \
-    registrybasepathfinder.h
+    registrybasepathfinder.h \
+    settingsprovider.h
 
 FORMS    += mainwindow.ui \
     settingsdialog.ui

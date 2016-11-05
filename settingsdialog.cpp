@@ -1,7 +1,7 @@
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
+#include "settingsprovider.h"
 #include <QFileDialog>
-#include <QSettings>
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
     QDialog(parent),
@@ -17,10 +17,10 @@ SettingsDialog::~SettingsDialog()
 
 void SettingsDialog::on_pushButton_clicked()
 {
-    QSettings settings;
+    SettingsProvider settings;
     QString dir = QFileDialog::getExistingDirectory(this,
                                                     tr("Open Backup Directory"),
-                                                    settings.value("BackupDir").toString(),
+                                                    settings.backupDir(),
                                                     QFileDialog::ShowDirsOnly);
-    settings.setValue("BackupDir", dir);
+    settings.setBackupDir(dir);
 }
