@@ -46,6 +46,7 @@ extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 void SaveFiles(const QString& root, const QString& name, const QFileInfoList& files)
 {
     QDir rootDir(root);
+    qt_ntfs_permission_lookup++; // turn checking on
     QDir saveDir(SettingsProvider().backupDir());
     if (!saveDir.exists()) {
         saveDir.mkpath(".");
@@ -61,21 +62,24 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
     }
     QDataStream out(&file);
     out.startTransaction();
-    qt_ntfs_permission_lookup++; // turn checking on
     foreach (const QFileInfo& info, files) {
         QFile in(info.filePath());
         if (!in.open(QIODevice::ReadOnly)) {
+            out.abortTransaction();
+            in.close();
+            file.close();
             qDebug() << "Error opening " << in.fileName() << ", reason: " << in.errorString();
             QMessageBox::critical(0, QObject::tr("Save Error"), QObject::tr("Cannot open file %1, reason: %2").arg(in.fileName(), in.errorString()));
-            out.abortTransaction();
             return;
         }
         out << rootDir.relativeFilePath(info.filePath())
             << static_cast<quint64>(info.permissions())
             << qCompress(in.readAll());
+        in.close();
     }
-    qt_ntfs_permission_lookup--; // turn it off again
     out.commitTransaction();
+    file.close();
+    qt_ntfs_permission_lookup--; // turn it off again
 }
 
 bool RunBackupFor(const QModelIndex& idx)
@@ -102,6 +106,7 @@ void RestoreFiles(const QString& root, const QString& name, const QString& title
         QMessageBox::information(0, QObject::tr("Failed to restore"), QObject::tr("No backup file found for %1").arg(title));
         return;
     }
+    qt_ntfs_permission_lookup++; // turn checking on
     QFile file(files.first().filePath());
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "Error opening " << file.fileName() << ", reason: " << file.errorString();
@@ -109,7 +114,6 @@ void RestoreFiles(const QString& root, const QString& name, const QString& title
         return;
     }
     QDataStream in(&file);
-    qt_ntfs_permission_lookup++; // turn checking on
     while (!in.atEnd()) {
         QString fileName;
         in >> fileName;
@@ -122,8 +126,8 @@ void RestoreFiles(const QString& root, const QString& name, const QString& title
         }
         if (!outFile.open(QIODevice::WriteOnly)) {
             qDebug() << "Error opening " << outFile.fileName() << ", reason: " << outFile.errorString();
-            QMessageBox::critical(0, QObject::tr("Restore Error"), QObject::tr("Cannot open file %1, reason: %2").arg(outFile.fileName(), outFile.errorString()));
-            return;
+            QMessageBox::warning(0, QObject::tr("Restore Error"), QObject::tr("Cannot open file %1, reason: %2").arg(outFile.fileName(), outFile.errorString()));
+            continue;
         }
         {
             quint64 permissions;
@@ -135,7 +139,9 @@ void RestoreFiles(const QString& root, const QString& name, const QString& title
             in >> data;
             outFile.write(qUncompress(data));
         }
+        outFile.close();
     }
+    file.close();
     qt_ntfs_permission_lookup--; // turn it off again
 }
 
