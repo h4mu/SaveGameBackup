@@ -1,0 +1,6 @@
+version: 1.0.{build}
+configuration: Release
+before_build:
+- cmd: C:\Qt\5.7\msvc2015\bin\qmake.exe -tp vc
+build:
+  verbosity: minimal

@@ -11,7 +11,7 @@ QList<QStringList> DirectoryScanner::foundGames()
     return result;
 }
 
-void DirectoryScanner::startElement(const QXmlName &name)
+void DirectoryScanner::startElement(const QXmlName &/*name*/)
 {
     ++depth;
 }
