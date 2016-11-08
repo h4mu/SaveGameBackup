@@ -6,15 +6,29 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>85</height>
+    <width>561</width>
+    <height>350</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Settings</string>
   </property>
   <layout class="QFormLayout" name="formLayout">
-   <item row="1" column="0">
+   <item row="0" column="0">
+    <widget class="QLabel" name="backupDir">
+     <property name="text">
+      <string>Backup directory</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QPushButton" name="folderSelect">
+     <property name="text">
+      <string>Select Folder</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -24,17 +38,33 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
+   <item row="1" column="0">
+    <widget class="QCheckBox" name="isCached">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="text">
-      <string>Backup directory</string>
+      <string>Cache game database locally</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QPushButton" name="pushButton">
+   <item row="1" column="1">
+    <widget class="QPushButton" name="cacheRefresh">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="text">
-      <string>Select Folder</string>
+      <string>Refresh local game database cache</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QCheckBox" name="useLatest">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string>Always restore from latest backup</string>
      </property>
     </widget>
    </item>
@@ -71,6 +101,22 @@
     <hint type="destinationlabel">
      <x>286</x>
      <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>isCached</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>cacheRefresh</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>107</x>
+     <y>55</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>380</x>
+     <y>59</y>
     </hint>
    </hints>
   </connection>

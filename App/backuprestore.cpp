@@ -41,12 +41,16 @@ QFileInfoList FindFiles(const QString& root, QString includes, QString excludes)
     return files;
 }
 
+#ifdef Q_OS_WIN
 extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
+#endif
 
 void SaveFiles(const QString& root, const QString& name, const QFileInfoList& files)
 {
     QDir rootDir(root);
+#ifdef Q_OS_WIN
     qt_ntfs_permission_lookup++; // turn checking on
+#endif
     QDir saveDir(SettingsProvider().backupDir());
     if (!saveDir.exists()) {
         saveDir.mkpath(".");
@@ -79,12 +83,14 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
     }
     out.commitTransaction();
     file.close();
+#ifdef Q_OS_WIN
     qt_ntfs_permission_lookup--; // turn it off again
+#endif
 }
 
 bool RunBackupFor(const QModelIndex& idx)
 {
-    if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid()) {
+    if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid() && idx.data(NameRole).isValid()) {
         qDebug() << "Backup for " << idx.data(PathRole) << " " << idx.data(IncludesRole) << " " << idx.data(ExcludesRole);
         const QFileInfoList& files(FindFiles(idx.data(PathRole).toString(), idx.data(IncludesRole).toString(), idx.data(ExcludesRole).toString()));
         SaveFiles(idx.data(PathRole).toString(), idx.data(NameRole).toString(), files);
@@ -106,7 +112,9 @@ void RestoreFiles(const QString& root, const QString& name, const QString& title
         QMessageBox::information(0, QObject::tr("Failed to restore"), QObject::tr("No backup file found for %1").arg(title));
         return;
     }
+#ifdef Q_OS_WIN
     qt_ntfs_permission_lookup++; // turn checking on
+#endif
     QFile file(files.first().filePath());
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "Error opening " << file.fileName() << ", reason: " << file.errorString();
@@ -142,12 +150,14 @@ void RestoreFiles(const QString& root, const QString& name, const QString& title
         outFile.close();
     }
     file.close();
+#ifdef Q_OS_WIN
     qt_ntfs_permission_lookup--; // turn it off again
+#endif
 }
 
 bool RunRestoreFor(const QModelIndex &idx)
 {
-    if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(IncludesRole).isValid() && idx.data(ExcludesRole).isValid()) {
+    if (idx.isValid() && idx.data(PathRole).isValid() && idx.data(NameRole).isValid() && idx.data(TitleRole).isValid()) {
         qDebug() << "Backup for " << idx.data(PathRole);
         RestoreFiles(idx.data(PathRole).toString(), idx.data(NameRole).toString(), idx.data(TitleRole).toString());
     }

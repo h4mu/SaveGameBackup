@@ -43,3 +43,4 @@ object_script.*
 release/
 x64/
 x86/
+*.sln*
