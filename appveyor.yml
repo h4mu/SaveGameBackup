@@ -4,5 +4,10 @@ before_build:
 - cmd: C:\Qt\5.7\msvc2015\bin\qmake.exe -r -tp vc
 build:
   verbosity: minimal
+test_script:
+- cmd: >-
+    set PATH=%PATH%;C:\Qt\5.7\msvc2015\bin
+
+    .\Tests\release\tst_backuprestoretests.exe
 artifacts:
-- path: App\$(configuration)\*.exe
+- path: $(configuration)\*.exe

@@ -39,8 +39,12 @@ BackupRestoreTests::BackupRestoreTests()
 {
 }
 
+void messageHandler(QtMsgType /*type*/, const QMessageLogContext &/*context*/, const QString &/*msg*/)
+{}
+
 void BackupRestoreTests::initTestCase()
 {
+    qInstallMessageHandler(messageHandler);
     QFile file(TEST_FILE_PATH);
     if (!file.open(QIODevice::WriteOnly)) {
         QFAIL(file.errorString().toStdString().c_str());
