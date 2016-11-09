@@ -1,4 +1,4 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/ctr2r733slfn8etk?svg=true)](https://ci.appveyor.com/project/h4mu/savegamebackup)
+[![Build Status](https://travis-ci.org/h4mu/SaveGameBackup.svg?branch=master)](https://travis-ci.org/h4mu/SaveGameBackup)[![Build status](https://ci.appveyor.com/api/projects/status/ctr2r733slfn8etk?svg=true)](https://ci.appveyor.com/project/h4mu/savegamebackup)
 
 # SaveGameBackup
 
