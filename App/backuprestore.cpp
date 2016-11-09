@@ -14,16 +14,20 @@ QFileInfoList FindFiles(const QString& root, QString includes, QString excludes)
                                     .replace(".", "\\.")
                                     .replace("*", ".*")
                                     .replace("?", ".?"));
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
     includeRegEx.optimize();
+#endif
     QRegularExpression excludeRegEx(excludes.replace(":", "|")
                                     .replace("\\", "/")
                                     .replace(".", "\\.")
                                     .replace("*", ".*")
                                     .replace("?", ".?"));
     bool isExcludePatternInvalid(excludeRegEx.pattern().isEmpty());
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
     if (!isExcludePatternInvalid) {
         excludeRegEx.optimize();
     }
+#endif
     QQueue<QFileInfo> entries;
     entries.enqueue(QFileInfo(root));
     while (!entries.isEmpty()) {
@@ -65,11 +69,15 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
         return;
     }
     QDataStream out(&file);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
     out.startTransaction();
+#endif
     foreach (const QFileInfo& info, files) {
         QFile in(info.filePath());
         if (!in.open(QIODevice::ReadOnly)) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
             out.abortTransaction();
+#endif
             in.close();
             file.close();
             qDebug() << "Error opening " << in.fileName() << ", reason: " << in.errorString();
@@ -81,7 +89,9 @@ void SaveFiles(const QString& root, const QString& name, const QFileInfoList& fi
             << qCompress(in.readAll());
         in.close();
     }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
     out.commitTransaction();
+#endif
     file.close();
 #ifdef Q_OS_WIN
     qt_ntfs_permission_lookup--; // turn it off again
