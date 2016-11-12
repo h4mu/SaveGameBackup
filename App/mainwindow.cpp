@@ -10,6 +10,7 @@
 #include <QStandardItemModel>
 #include <QtWidgets>
 #include <QtConcurrent>
+#include <functional>
 
 const static SaveGameItemDataRole roles[] = {NameRole, TitleRole, PathRole, IncludesRole, ExcludesRole};
 const static int numRoles = sizeof(roles) / sizeof(*roles);
