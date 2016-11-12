@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>GameSaveInfo202.xq</file>
+        <file>GameSaveManager.xq</file>
     </qresource>
 </RCC>

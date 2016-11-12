@@ -8,6 +8,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     ui(new Ui::SettingsDialog)
 {
     ui->setupUi(this);
+    backupDir = settings.backupDir();
+    ui->isGSMFormat->setChecked(settings.isGameSaveManagerFormatSelected());
+    ui->dbUrl->setText(settings.gameDatabaseUri());
 }
 
 SettingsDialog::~SettingsDialog()
@@ -17,10 +20,15 @@ SettingsDialog::~SettingsDialog()
 
 void SettingsDialog::on_pushButton_clicked()
 {
-    SettingsProvider settings;
-    QString dir = QFileDialog::getExistingDirectory(this,
+    backupDir = QFileDialog::getExistingDirectory(this,
                                                     tr("Open Backup Directory"),
-                                                    settings.backupDir(),
+                                                    backupDir,
                                                     QFileDialog::ShowDirsOnly);
-    settings.setBackupDir(dir);
+}
+
+void SettingsDialog::on_buttonBox_accepted()
+{
+    settings.setBackupDir(backupDir);
+    settings.setGameSaveManagerFormatSelected(ui->isGSMFormat->isChecked());
+    settings.setGameDatabaseUri(ui->dbUrl->text());
 }

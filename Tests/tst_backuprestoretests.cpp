@@ -9,7 +9,7 @@ SettingsProvider::SettingsProvider()
 {
 }
 
-QString SettingsProvider::backupDir()
+QString SettingsProvider::backupDir() const
 {
     return ".";
 }

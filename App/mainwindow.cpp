@@ -85,7 +85,7 @@ void MainWindow::on_actionSettings_triggered()
     dlg->exec();
 }
 
-QList<QStringList> readGamesDb(const QString &batch)
+QList<QStringList> readGamesDb(bool isSaveGameManagerFormatUsed, const QString &url)
 {
     QXmlQuery query;
 #ifdef Q_OS_WIN
@@ -97,8 +97,8 @@ QList<QStringList> readGamesDb(const QString &batch)
 #else
     query.bindVariable("os", QVariant("Linux"));
 #endif
-    query.bindVariable("batch", QVariant(batch));
-    query.setQuery(QUrl("qrc:///GameSaveInfo202.xq"));
+    query.bindVariable("url", QVariant(url));
+    query.setQuery(QUrl(isSaveGameManagerFormatUsed ? "qrc:///GameSaveManager.xq" : "qrc:///GameSaveInfo202.xq"));
     if (!query.isValid()) {
         qDebug() << "Invalid query";
         QMessageBox::critical(0, QObject::tr("Query Error"), QObject::tr("Unable to query games database."));
@@ -131,11 +131,6 @@ void MainWindow::updateModel()
 void MainWindow::on_action_Scan_Computer_triggered()
 {
     model->clear();
-    QStringList batches;
-    batches << "numeric";
-    for(char batch = 'a'; batch <= 'z'; ++batch){
-      batches << QString(QChar(batch));
-    }
 
     QProgressDialog dialog;
     dialog.setLabelText(tr("Scanning computer for games..."));
@@ -144,7 +139,19 @@ void MainWindow::on_action_Scan_Computer_triggered()
     connect(watcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
     connect(watcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
 
-    watcher->setFuture(QtConcurrent::mapped(batches, readGamesDb));
+    const SettingsProvider settings;
+    const bool isSaveGameManagerFormatUsed(settings.isGameSaveManagerFormatSelected());
+    const QString& url(settings.gameDatabaseUri());
+    QStringList urls;
+    if (url.contains("%1")) {
+        urls << url.arg("numeric");
+        for(char batch = 'a'; batch <= 'z'; ++batch){
+          urls << url.arg(batch);
+        }
+    } else {
+        urls << url;
+    }
+    watcher->setFuture(QtConcurrent::mapped(urls, std::bind(readGamesDb, isSaveGameManagerFormatUsed, std::placeholders::_1)));
     dialog.exec();
 }
 
