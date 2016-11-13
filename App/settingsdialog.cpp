@@ -18,17 +18,17 @@ SettingsDialog::~SettingsDialog()
     delete ui;
 }
 
-void SettingsDialog::on_pushButton_clicked()
-{
-    backupDir = QFileDialog::getExistingDirectory(this,
-                                                    tr("Open Backup Directory"),
-                                                    backupDir,
-                                                    QFileDialog::ShowDirsOnly);
-}
-
 void SettingsDialog::on_buttonBox_accepted()
 {
     settings.setBackupDir(backupDir);
     settings.setGameSaveManagerFormatSelected(ui->isGSMFormat->isChecked());
     settings.setGameDatabaseUri(ui->dbUrl->text());
+}
+
+void SettingsDialog::on_folderSelect_clicked()
+{
+    backupDir = QFileDialog::getExistingDirectory(this,
+                                                    tr("Open Backup Directory"),
+                                                    backupDir,
+                                                    QFileDialog::ShowDirsOnly);
 }

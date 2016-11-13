@@ -17,9 +17,9 @@ public:
     ~SettingsDialog();
 
 private slots:
-    void on_pushButton_clicked();
-
     void on_buttonBox_accepted();
+
+    void on_folderSelect_clicked();
 
 private:
     Ui::SettingsDialog *ui;
