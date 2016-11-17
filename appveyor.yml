@@ -1,4 +1,4 @@
-version: 0.8.{build}
+version: 0.6.{build}
 environment:
   matrix:
   - Configuration: Debug
@@ -10,36 +10,14 @@ environment:
 before_build:
 - cmd: >-
     if "%platform%" == "x64" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+
     if "%platform%" == "x64" (set qtplatform=msvc2015_64) else (set qtplatform=msvc2015)
+
     "C:\Qt\5.7\%qtplatform%\bin\qmake.exe" -r -tp "%buildengine%"
 build:
   parallel: true
   verbosity: minimal
 test_script:
-- ps: >-
-    if($env:platform -eq "x64") {
-        $env:path = "C:\Qt\5.7\msvc2015_64\bin"
-    } else {
-        $env:path = "C:\Qt\5.7\msvc2015\bin"
-    }
-    ls "Tests\$env:Configuration" -filter "*.exe" |
-    % { 
-        $filename = $_.FullName
-        &$filename "-functions" |
-        % {
-            $testName = $_.trim("()")
-            Add-AppveyorTest -Name $testName -Framework "xUnit" -Filename $filename -Outcome "Running"
-            &$filename $testName
-            if($LastExitCode -eq 0)
-            {
-                $result = "Passed"
-            }
-            else
-            {
-                $result = "Failed"
-            }
-            Update-AppveyorTest -Name $testName -Framework "xUnit" -Filename $filename -Outcome $result
-        }
-    }
+- ps: "if($env:platform -eq \"x64\") {\n    $env:path = \"C:\\Qt\\5.7\\msvc2015_64\\bin\"\n} else {\n    $env:path = \"C:\\Qt\\5.7\\msvc2015\\bin\"\n}\nls \"Tests\\$env:Configuration\" -filter \"*.exe\" |\n% { \n    $filename = $_.FullName\n    &$filename \"-functions\" |\n    % {\n        $testName = $_.trim(\"()\")\n        Add-AppveyorTest -Name $testName -Framework \"xUnit\" -Filename $filename -Outcome \"Running\"\n		$time = Measure-Command { &$filename $testName | Out-Default }\n        if($LastExitCode -eq 0)\n        {\n            $result = \"Passed\"\n        }\n        else\n        {\n            $result = \"Failed\"\n        }\n        Update-AppveyorTest -Name $testName -Framework \"xUnit\" -Filename $filename -Outcome $result -Duration $time.Milliseconds\n    }\n}"
 artifacts:
 - path: App\$(configuration)\*.exe
