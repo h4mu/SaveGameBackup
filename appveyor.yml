@@ -1,13 +1,33 @@
 version: 0.8.{build}
-configuration: Release
+environment:
+  matrix:
+  - Configuration: Debug
+    Platform: Win32
+    BuildEngine: vc
+  - Configuration: Release
+    Platform: Win32
+    BuildEngine: vc
 before_build:
-- cmd: C:\Qt\5.7\msvc2015\bin\qmake.exe -r -tp vc
+- cmd: >-
+    if "%platform%" == "x64" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+    if "%platform%" == "x64" (set qtplatform=msvc2015_64) else (set qtplatform=msvc2015)
+    "C:\Qt\5.7\%qtplatform%\bin\qmake.exe" -r -tp "%buildengine%"
 build:
+  parallel: true
   verbosity: minimal
 test_script:
-- cmd: >-
-    set PATH=%PATH%;C:\Qt\5.7\msvc2015\bin
-
-    .\Tests\release\tst_backuprestoretests.exe
+- ps: >-
+    if($env:platform -eq "x64") {
+        $env:path = "C:\Qt\5.7\msvc2015_64\bin"
+    } else {
+        $env:path = "C:\Qt\5.7\msvc2015\bin"
+    }
+    ls "Tests\$env:Configuration" -filter "*.exe" | % { &$_.FullName "-o" "testresults.xml,xml" }
+    cat testresults.xml
+    # upload results to AppVeyor
+    $wc = New-Object 'System.Net.WebClient'
+    $bytes = $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\testresults.xml))
+    $result = [System.Text.Encoding]::UTF8.GetString($bytes)
+    echo $result
 artifacts:
-- path: $(configuration)\*.exe
+- path: App\$(configuration)\*.exe
