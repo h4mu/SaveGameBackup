@@ -22,12 +22,24 @@ test_script:
     } else {
         $env:path = "C:\Qt\5.7\msvc2015\bin"
     }
-    ls "Tests\$env:Configuration" -filter "*.exe" | % { &$_.FullName "-o" "testresults.xml,xml" }
-    cat testresults.xml
-    # upload results to AppVeyor
-    $wc = New-Object 'System.Net.WebClient'
-    $bytes = $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\testresults.xml))
-    $result = [System.Text.Encoding]::UTF8.GetString($bytes)
-    echo $result
+    ls "Tests\$env:Configuration" -filter "*.exe" |
+    % { 
+        $filename = $_.FullName
+        &$filename "-functions" |
+        % {
+            $testName = $_.trim("()")
+            Add-AppveyorTest -Name $testName -Framework "xUnit" -Filename $filename -Outcome "Running"
+            &$filename $testName
+            if($LastExitCode -eq 0)
+            {
+                $result = "Passed"
+            }
+            else
+            {
+                $result = "Failed"
+            }
+            Update-AppveyorTest -Name $testName -Framework "xUnit" -Filename $filename -Outcome $result
+        }
+    }
 artifacts:
 - path: App\$(configuration)\*.exe
