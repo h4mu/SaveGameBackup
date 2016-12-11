@@ -153,31 +153,28 @@ void MainWindow::on_action_Scan_Computer_triggered()
     dialog.exec();
 }
 
+template <typename MapFunctor>
+void RunForSelection(const Ui::MainWindow * const ui, const QString& label, MapFunctor fun)
+{
+    QFutureWatcher<void> watcher;
+    QProgressDialog dialog;
+    dialog.setLabelText(label);
+    QObject::connect(&watcher, SIGNAL(finished()), &dialog, SLOT(reset()));
+    QObject::connect(&dialog, SIGNAL(canceled()), &watcher, SLOT(cancel()));
+    QObject::connect(&watcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
+    QObject::connect(&watcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
+
+    watcher.setFuture(QtConcurrent::mapped(ui->listView->selectionModel()->selectedIndexes(), fun));
+    dialog.exec();
+}
+
 void MainWindow::on_action_Backup_triggered()
 {
-    QFutureWatcher<void> restoreWatcher;
-    QProgressDialog dialog;
-    dialog.setLabelText(tr("Creating game save backups..."));
-    connect(&restoreWatcher, SIGNAL(finished()), &dialog, SLOT(reset()));
-    connect(&dialog, SIGNAL(canceled()), &restoreWatcher, SLOT(cancel()));
-    connect(&restoreWatcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
-    connect(&restoreWatcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
-
-    restoreWatcher.setFuture(QtConcurrent::mapped(ui->listView->selectionModel()->selectedIndexes(), RunBackupFor));
-    dialog.exec();
+    RunForSelection(ui, tr("Creating game save backups..."), RunBackupFor);
 }
 
 void MainWindow::on_action_Restore_triggered()
 {
-    QFutureWatcher<void> restoreWatcher;
-    QProgressDialog dialog;
-    dialog.setLabelText(tr("Restoring game saves..."));
-    connect(&restoreWatcher, SIGNAL(finished()), &dialog, SLOT(reset()));
-    connect(&dialog, SIGNAL(canceled()), &restoreWatcher, SLOT(cancel()));
-    connect(&restoreWatcher, SIGNAL(progressRangeChanged(int,int)), &dialog, SLOT(setRange(int,int)));
-    connect(&restoreWatcher, SIGNAL(progressValueChanged(int)), &dialog, SLOT(setValue(int)));
-
-    restoreWatcher.setFuture(QtConcurrent::mapped(ui->listView->selectionModel()->selectedIndexes(), RunRestoreFor));
-    dialog.exec();
+    RunForSelection(ui, tr("Restoring game saves..."), RunRestoreFor);
 }
 
