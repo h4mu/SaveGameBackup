@@ -39,7 +39,7 @@ QString FileSystemBasePathFinder::GetBasePath()
                         ? QStandardPaths::ApplicationsLocation
                         : QStandardPaths::DocumentsLocation);
             QStringList paths(QStandardPaths::standardLocations(location));
-            foreach (const QString &base, paths)
+            for (const QString &base : paths)
             {
                 // remove extra "Programs\" from the front because it is already included in the standard location string
                 file.setFile(base + "/" + (isStartMenu ? path.remove(0, 9) : path));
@@ -89,7 +89,7 @@ QString FileSystemBasePathFinder::GetBasePath()
 #ifdef Q_OS_WIN
         } else if (ev == "SHARED_DOCUMENTS") {
             QStringList paths(QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation));
-            foreach (QString base, paths)
+            for (QString base : paths)
             {
                 base.replace(env.value("USERNAME"), "Public");
                 file.setFile(base + "/" + path);

@@ -1,9 +1,9 @@
 #ifndef DIRECTORYSCANNER_H
 #define DIRECTORYSCANNER_H
 #include <QAbstractXmlReceiver>
+#include <QXmlNamePool>
 #include "filesystembasepathfinder.h"
 #include "registrybasepathfinder.h"
-#include <QXmlNamePool>
 
 class DirectoryScanner : public QAbstractXmlReceiver
 {
@@ -22,7 +22,7 @@ public:
     virtual void namespaceBinding(const QXmlName &name);
     virtual void startOfSequence();
     virtual void endOfSequence();
-    QList<QStringList> foundGames();
+    QVariantList foundGames() const;
 
 private:
     int depth;
@@ -34,7 +34,8 @@ private:
     QStringList exclude;
     FileSystemBasePathFinder fsBaseFinder;
     RegistryBasePathFinder regBaseFinder;
-    QList<QStringList> result;
+    QVariantList dirs;
+    QVariantList result;
 };
 
 #endif // DIRECTORYSCANNER_H

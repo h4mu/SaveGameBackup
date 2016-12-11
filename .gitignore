@@ -44,3 +44,4 @@ release/
 x64/
 x86/
 *.sln*
+target_wrapper.bat

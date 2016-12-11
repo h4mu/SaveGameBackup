@@ -15,8 +15,6 @@ enum SaveGameItemDataRole
     NameRole = Qt::UserRole,
     TitleRole = Qt::DisplayRole,
     PathRole = Qt::UserRole + 1,
-    IncludesRole = Qt::UserRole + 2,
-    ExcludesRole = Qt::UserRole + 3
 };
 
 class MainWindow : public QMainWindow
@@ -34,9 +32,7 @@ private slots:
     void on_actionSettings_triggered();
     void on_action_Scan_Computer_triggered();
     void updateModel();
-
     void on_action_Backup_triggered();
-
     void on_action_Restore_triggered();
 
 private:
@@ -44,7 +40,7 @@ private:
     void writeSettings();
     Ui::MainWindow *ui;
     QStandardItemModel *model;
-    QFutureWatcher<QList<QStringList> > *watcher;
+    QFutureWatcher<QVariantList> *watcher;
 };
 
 #endif // MAINWINDOW_H

@@ -12,23 +12,20 @@
 #include <QtConcurrent>
 #include <functional>
 
-const static SaveGameItemDataRole roles[] = {NameRole, TitleRole, PathRole, IncludesRole, ExcludesRole};
+const static SaveGameItemDataRole roles[] = {NameRole, TitleRole, PathRole};
 const static int numRoles = sizeof(roles) / sizeof(*roles);
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     model(new QStandardItemModel(0, 5)),
-    watcher(new QFutureWatcher<QList<QStringList> >(this))
+    watcher(new QFutureWatcher<QVariantList>(this))
 {
     ui->setupUi(this);
     ui->listView->setModel(model);
     connect(watcher, SIGNAL(finished()), this, SLOT(updateModel()));
 
     readSettings();
-    QStringList headers;
-    headers << "name" << "title" << "basePath" << "includes" << "excludes";
-    model->setHorizontalHeaderLabels(headers);
 }
 
 void MainWindow::readSettings()
@@ -86,7 +83,7 @@ void MainWindow::on_actionSettings_triggered()
     dlg->exec();
 }
 
-QList<QStringList> readGamesDb(bool isSaveGameManagerFormatUsed, const QString &url)
+QVariantList readGamesDb(bool isSaveGameManagerFormatUsed, const QString &url)
 {
     QXmlQuery query;
 #ifdef Q_OS_WIN
@@ -103,26 +100,26 @@ QList<QStringList> readGamesDb(bool isSaveGameManagerFormatUsed, const QString &
     if (!query.isValid()) {
         qDebug() << "Invalid query";
         QMessageBox::critical(0, QObject::tr("Query Error"), QObject::tr("Unable to query games database."));
-        return QList<QStringList>();
+        return QVariantList();
     }
     DirectoryScanner directoryScanner(query.namePool());
     if (!query.evaluateTo(&directoryScanner)) {
         qDebug() << "Query error";
         QMessageBox::critical(0, QObject::tr("Query Error"), QObject::tr("Unable to parse games database."));
-        return QList<QStringList>();
+        return QVariantList();
     }
     return directoryScanner.foundGames();
 }
 
 void MainWindow::updateModel()
 {
-    foreach (QList<QStringList> rows, watcher->future()) {
-        foreach (QStringList row, rows) {
-            Q_ASSERT(row.length() == numRoles);
-            qDebug() << row;
+    for (const QVariantList& batch : watcher->future()) {
+        for (const QVariant& entry : batch) {
+            const QVariantList& entryItems(entry.toList());
+            qDebug() << entry;
             QStandardItem *item = new QStandardItem;
-            for (int role = 0; role < numRoles; ++role) {
-              item->setData(row.at(role), roles[role]);
+            for (int i = 0; i < numRoles; ++i) {
+                item->setData(entryItems[i], roles[i]);
             }
             model->appendRow(item);
         }
