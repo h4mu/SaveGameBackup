@@ -16,7 +16,7 @@ TEMPLATE = app
 SOURCES += tst_backuprestoretests.cpp
 SOURCES += ../App/backuprestore.cpp
 
-DEFINES += SRCDIR=\\\"$$PWD/\\\"
+DEFINES += SRCDIR=\\\"$$PWD/\\\" QT_FORCE_ASSERTS=1
 
 MOC_DIR = moc
 INCLUDEPATH += $$MOC_DIR ../App
